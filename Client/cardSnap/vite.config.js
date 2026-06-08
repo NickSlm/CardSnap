@@ -1,17 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from "@tailwindcss/vite";
-
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),
-    tailwindcss()],
+  plugins: [react(),tailwindcss(),basicSsl()],
   server: {
-      host: true,  // or '0.0.0.0'
+    host: true, 
+    https: true,
     port: 5173,
-  },
-  proxy: {
-      '/data': { target: 'http://localhost:5173', changeOrigin: true },
+    proxy: {
+      '/data': { target: 'http://localhost:5245', changeOrigin: true },
+    }
   }
 })
