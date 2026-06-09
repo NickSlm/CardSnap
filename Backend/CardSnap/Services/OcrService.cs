@@ -1,6 +1,11 @@
 ﻿using CardSnap.Interfaces;
 using System.Text.RegularExpressions;
 using Tesseract;
+using SkiaSharp;
+
+using OpenCvSharp;
+using System.Threading;
+
 
 namespace CardSnap.Services
 {
@@ -14,34 +19,49 @@ namespace CardSnap.Services
 
         public async Task<string> ReadCardId(byte[] imageBytes)
         {
-            var debugPath = Path.Combine(Path.GetTempPath(), "cardsnap_debug.jpg");
-            await System.IO.File.WriteAllBytesAsync(debugPath, imageBytes);
-            Console.WriteLine($"DEBUG image saved to: {debugPath}");
+            using var skBitmap = SKBitmap.Decode(imageBytes);
+            using var skImage = SKImage.FromBitmap(skBitmap);
+
+            using var skData = skImage.Encode(SKEncodedImageFormat.Jpeg, 95);
+
+            var jpegBytes = skData.ToArray();
 
 
-            using var engine = new TesseractEngine(_tessdataPath, "eng", EngineMode.Default);
+            await System.IO.File.WriteAllBytesAsync(
+    Path.Combine("\\TCGPROJECT\\CardSnap\\ImageTest\\", "cardsnap_debug.jpg"), jpegBytes);
+
+            using var src = Cv2.ImDecode(jpegBytes, ImreadModes.Color);
+
+            // Scale up 4x — text in your image is quite small
+            using var resized = new Mat();
+            Cv2.Resize(src, resized, new Size(src.Width * 4, src.Height * 4),
+                       interpolation: InterpolationFlags.Lanczos4);
+
+            // Grayscale
+            using var gray = new Mat();
+            Cv2.CvtColor(resized, gray, ColorConversionCodes.BGR2GRAY);
+
+            // Otsu threshold — auto picks best value for this lighting
+            using var thresh = new Mat();
+            Cv2.Threshold(gray, thresh, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+
+            Cv2.ImWrite(Path.Combine("\\TCGPROJECT\\CardSnap\\ImageTest\\", "cardsnap_processed.jpg"), thresh);
+
+            Cv2.ImEncode(".png", thresh, out var processedBytes);
+
+            using var engine = new TesseractEngine(_tessdataPath, "eng", EngineMode.LstmOnly);
             engine.SetVariable("tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
+            engine.SetVariable("tessedit_pageseg_mode", "7");
 
-            using var img = Pix.LoadFromMemory(imageBytes);
-
-            var cardWidth = img.Width;
-            var cardHeight = img.Height;
-
-            var region = new Rect(
-                x: (int)(cardWidth * 0.65),
-                y: (int)(cardHeight * 0.80),
-                width: (int)(cardWidth * 0.35),
-                height: (int)(cardHeight * 0.20)
-                );
-
-            Console.WriteLine(region);
-
-            using var page = engine.Process(img, region);
-
+            using var img = Pix.LoadFromMemory(processedBytes);
+            using var page = engine.Process(img);
             var raw = page.GetText().Trim();
+            Console.WriteLine($"Raw OCR: '{raw}'");
 
-            Console.WriteLine(raw);
-            return Regex.Replace(raw, @"\s+", "");
+            var cleaned = Regex.Replace(raw, @"\s+", "");
+            var match = Regex.Match(cleaned, @"[A-Z]{2}\d{2}-\d{3}");
+            return match.Success ? match.Value : string.Empty;
         }
+   
     }
 }

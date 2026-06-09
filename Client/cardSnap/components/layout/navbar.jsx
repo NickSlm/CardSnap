@@ -7,10 +7,8 @@ export default function Navbar() {
     return (
         <nav className="bg-cream-50 border-b border-cream-200 px-6 h-14 flex items-center justify-between">
 
-        {/* Logo */}
         <NavLink to="/" className="flex items-center gap-2 text-[15px] font-medium text-baltic-700 no-underline">
             <div className="w-7 h-7 bg-baltic-700 rounded-md flex items-center justify-center text-cream-50 text-sm">
-            {/* swap with your logo/icon */}
             C
             </div>
             CardSnap
@@ -35,7 +33,6 @@ export default function Navbar() {
         ))}
       </div>
 
-      {/* Right side */}
       <div className="flex items-center gap-2">
 
         <button className="flex items-center gap-1.5 bg-baltic-700 hover:bg-baltic-800 text-cream-50 text-[13px] font-medium rounded-md px-3 h-[34px] transition-colors">

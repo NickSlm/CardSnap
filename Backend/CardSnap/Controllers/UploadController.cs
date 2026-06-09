@@ -16,6 +16,8 @@ namespace CardSnap.Controllers
         [HttpPost("/data/upload/image")]
         public async Task<ActionResult> UploadImage([FromForm] UploadDto dto)
         {
+
+            Console.WriteLine(dto.Image.ContentType);
             byte[] imageBytes;
 
             using (var memoryStream = new MemoryStream())
@@ -24,7 +26,7 @@ namespace CardSnap.Controllers
                 imageBytes = memoryStream.ToArray();
             }
             var cardId = await _ocrService.ReadCardId(imageBytes);
-            Console.WriteLine(cardId);
+            //Console.WriteLine(cardId);
 
 
             return Ok(new { message = "sent" });
