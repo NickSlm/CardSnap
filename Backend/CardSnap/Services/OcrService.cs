@@ -32,16 +32,13 @@ namespace CardSnap.Services
 
             using var src = Cv2.ImDecode(jpegBytes, ImreadModes.Color);
 
-            // Scale up 4x — text in your image is quite small
             using var resized = new Mat();
             Cv2.Resize(src, resized, new Size(src.Width * 4, src.Height * 4),
                        interpolation: InterpolationFlags.Lanczos4);
 
-            // Grayscale
             using var gray = new Mat();
             Cv2.CvtColor(resized, gray, ColorConversionCodes.BGR2GRAY);
 
-            // Otsu threshold — auto picks best value for this lighting
             using var thresh = new Mat();
             Cv2.Threshold(gray, thresh, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
 
